@@ -1,19 +1,17 @@
-import { redirect, SessionStorage } from '@remix-run/server-runtime'
-import {
-  AuthenticateOptions,
-  Strategy,
-  StrategyVerifyCallback,
-} from 'remix-auth'
+import type { SessionStorage } from '@remix-run/server-runtime'
+import { redirect } from '@remix-run/server-runtime'
 import crypto from 'crypto-js'
+import type { AuthenticateOptions, StrategyVerifyCallback } from 'remix-auth'
+import { Strategy } from 'remix-auth'
 
-export interface SendEmailOptions<User> {
+export type SendEmailOptions<User> = {
   emailAddress: string
   magicLink: string
   user?: User | null
   domainUrl: string
 }
 
-export interface SendEmailFunction<User> {
+export type SendEmailFunction<User> = {
   (options: SendEmailOptions<User>): Promise<void>
 }
 
@@ -22,14 +20,14 @@ export interface SendEmailFunction<User> {
  * This can be useful to ensure it's not a disposable email address.
  * @param emailAddress The email address to validate
  */
-export interface VerifyEmailFunction {
+export type VerifyEmailFunction = {
   (email: string): Promise<void>
 }
 
 /**
  * The content of the magic link payload
  */
-export interface MagicLinkPayload {
+export type MagicLinkPayload = {
   /**
    * The email address used to authenticate
    */
@@ -49,7 +47,7 @@ export interface MagicLinkPayload {
  * This interface declares what configuration the strategy needs from the
  * developer to correctly work.
  */
-export interface EmailLinkStrategyOptions<User> {
+export type EmailLinkStrategyOptions<User> = {
   /**
    * The endpoint the user will go after clicking on the email link.
    * A whole URL is not required, the pathname is enough, the strategy will
@@ -111,12 +109,12 @@ export interface EmailLinkStrategyOptions<User> {
  * This interface declares what the developer will receive from the strategy
  * to verify the user identity in their system.
  */
-export interface EmailLinkStrategyVerifyParams {
+export type EmailLinkStrategyVerifyParams = {
   email: string
 }
 
 const verifyEmailAddress: VerifyEmailFunction = async (email) => {
-  if (!/.+@.+/.test(email)) {
+  if (!/.+@.+/u.test(email)) {
     throw new Error('A valid email is required.')
   }
 }
@@ -125,18 +123,27 @@ export class EmailLinkStrategy<User> extends Strategy<
   User,
   EmailLinkStrategyVerifyParams
 > {
-  name = 'email-link'
+  public name = 'email-link'
 
-  private emailField = 'email'
-  private callbackURL: string
-  private sendEmail: SendEmailFunction<User>
-  private validateEmail: VerifyEmailFunction
-  private secret: string
-  private magicLinkSearchParam: string
-  private linkExpirationTime: number
-  private sessionErrorKey: string
-  private sessionMagicLinkKey: string
-  private validateSessionMagicLink: boolean
+  private readonly emailField: string = 'email'
+
+  private readonly callbackURL: string
+
+  private readonly sendEmail: SendEmailFunction<User>
+
+  private readonly validateEmail: VerifyEmailFunction
+
+  private readonly secret: string
+
+  private readonly magicLinkSearchParam: string
+
+  private readonly linkExpirationTime: number
+
+  private readonly sessionErrorKey: string
+
+  private readonly sessionMagicLinkKey: string
+
+  private readonly validateSessionMagicLink: boolean
 
   constructor(
     options: EmailLinkStrategyOptions<User>,
@@ -155,7 +162,7 @@ export class EmailLinkStrategy<User> extends Strategy<
     this.validateSessionMagicLink = options.validateSessionMagicLink ?? false
   }
 
-  async authenticate(
+  public async authenticate(
     request: Request,
     sessionStorage: SessionStorage,
     options: AuthenticateOptions
@@ -178,7 +185,7 @@ export class EmailLinkStrategy<User> extends Strategy<
 
       // if it doesn't have an email address,
       if (!emailAddress) {
-        return await this.failure(
+        return this.failure(
           'Missing email address.',
           request,
           sessionStorage,
@@ -210,7 +217,7 @@ export class EmailLinkStrategy<User> extends Strategy<
           },
         })
       } catch (error) {
-        const message = (error as Error).message
+        const { message } = error as Error
         return this.failure(message, request, sessionStorage, options)
       }
     }
@@ -230,14 +237,14 @@ export class EmailLinkStrategy<User> extends Strategy<
       // if something happens, we should redirect to the failureRedirect
       // and flash the error message, or just throw the error if failureRedirect
       // is not defined
-      const message = (error as Error).message
+      const { message } = error as Error
       return this.failure(message, request, sessionStorage, options)
     }
 
     // remove the magic link from the session
     session.unset(this.sessionMagicLinkKey)
     session.set(options.sessionKey, user)
-    return this.success(user as User, request, sessionStorage, options)
+    return this.success(user, request, sessionStorage, options)
   }
 
   private getDomainURL(request: Request): string {
@@ -315,7 +322,9 @@ export class EmailLinkStrategy<User> extends Strategy<
       ? this.getMagicLinkCode(sessionMagicLink)
       : null
 
-    let emailAddress, linkCreationDateString, validateSessionMagicLink
+    let emailAddress
+    let linkCreationDateString
+    let validateSessionMagicLink
     try {
       const decryptedString = await this.decrypt(linkCode)
       const payload = JSON.parse(decryptedString) as MagicLinkPayload
