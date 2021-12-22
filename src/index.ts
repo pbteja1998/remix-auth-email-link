@@ -185,24 +185,18 @@ export class EmailLinkStrategy<User> extends Strategy<
 
       // if it doesn't have an email address,
       if (!emailAddress) {
-        return this.failure(
-          'Missing email address.',
-          request,
-          sessionStorage,
-          options
-        )
+        const message = 'Missing email address.'
+        if (!options.failureRedirect) {
+          throw new Error(message)
+        }
+        session.flash(this.sessionErrorKey, message)
+        const cookie = await sessionStorage.commitSession(session)
+        throw redirect(options.failureRedirect, {
+          headers: { 'Set-Cookie': cookie },
+        })
       }
 
       try {
-        if (!options.successRedirect) {
-          return await this.failure(
-            'success redirect is required.',
-            request,
-            sessionStorage,
-            options
-          )
-        }
-
         // Validate the email address
         await this.validateEmail(emailAddress)
 
@@ -217,8 +211,15 @@ export class EmailLinkStrategy<User> extends Strategy<
           },
         })
       } catch (error) {
+        if (!options.failureRedirect) {
+          throw error
+        }
         const { message } = error as Error
-        return this.failure(message, request, sessionStorage, options)
+        session.flash(this.sessionErrorKey, message)
+        const cookie = await sessionStorage.commitSession(session)
+        throw redirect(options.failureRedirect, {
+          headers: { 'Set-Cookie': cookie },
+        })
       }
     }
 
@@ -237,14 +238,28 @@ export class EmailLinkStrategy<User> extends Strategy<
       // if something happens, we should redirect to the failureRedirect
       // and flash the error message, or just throw the error if failureRedirect
       // is not defined
+      if (!options.failureRedirect) {
+        throw error
+      }
       const { message } = error as Error
-      return this.failure(message, request, sessionStorage, options)
+      session.flash(this.sessionErrorKey, message)
+      const cookie = await sessionStorage.commitSession(session)
+      throw redirect(options.failureRedirect, {
+        headers: { 'Set-Cookie': cookie },
+      })
+    }
+
+    if (!options.successRedirect) {
+      return user
     }
 
     // remove the magic link from the session
     session.unset(this.sessionMagicLinkKey)
     session.set(options.sessionKey, user)
-    return this.success(user, request, sessionStorage, options)
+    const cookie = await sessionStorage.commitSession(session)
+    throw redirect(options.successRedirect, {
+      headers: { 'Set-Cookie': cookie },
+    })
   }
 
   private getDomainURL(request: Request): string {
