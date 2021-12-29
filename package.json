@@ -18,6 +18,15 @@
     "authentication",
     "strategy"
   ],
+  "author": {
+    "name": "Bhanu Teja Pachipulusu",
+    "email": "pbteja1998@gmail.com",
+    "url": "https://github.com/pbteja1998"
+  },
+  "repository": {
+    "url": "https://github.com/pbteja1998/remix-auth-email-link",
+    "type": "git"
+  },
   "license": "MIT",
   "files": [
     "build",
