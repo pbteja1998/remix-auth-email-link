@@ -205,7 +205,7 @@ export class EmailLinkStrategy<User> extends Strategy<
         const magicLink = await this.sendToken(emailAddress, domainUrl)
 
         session.set(this.sessionMagicLinkKey, await this.encrypt(magicLink))
-        return redirect(options.successRedirect, {
+        throw redirect(options.successRedirect, {
           headers: {
             'Set-Cookie': await sessionStorage.commitSession(session),
           },
