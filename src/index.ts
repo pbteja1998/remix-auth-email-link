@@ -211,6 +211,11 @@ export class EmailLinkStrategy<User> extends Strategy<
           },
         })
       } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((error as any).status === 302) {
+          // If it's a redirect, then just throw the redirect as it is
+          throw error
+        }
         if (!options.failureRedirect) {
           throw error
         }
