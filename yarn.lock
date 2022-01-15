@@ -2614,10 +2614,10 @@ regexpp@^3.2.0:
   resolved "https://registry.yarnpkg.com/regexpp/-/regexpp-3.2.0.tgz#0425a2768d8f23bad70ca4b90461fa2f1213e1b2"
   integrity sha512-pq2bWo9mVD43nbts2wGv17XLiNLya+GklZ8kaDLV2Z08gDCsGpnKn9BFMepvWuHCbyVvY7J5o5+BVvoQbmlJLg==
 
-remix-auth@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/remix-auth/-/remix-auth-3.1.0.tgz#0e2e042dbaed807870c9c31cc34c7c0e32e00af8"
-  integrity sha512-KWBLV5pr0jOCuXjhZp1LHEtG9SR1SuLLzkI9MZuzg/un6P6edA9EKzT5LMQRHGoyiRDZ100wgMj8Dd0mw6950A==
+remix-auth@^3.2.1:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/remix-auth/-/remix-auth-3.2.1.tgz#6252246eef1016de2c9f426b1fd8c5a2689dfb09"
+  integrity sha512-5N5ZjKCYGjbRmMi9PQwngKuuGkBEfny0Q4iXyTrDxQhSzAbQ/+wHX+ZKGdneYWHULZJCRZbjSmyrjk/rJxGFlw==
   dependencies:
     remix-utils "^2.2.0"
     uuid "^8.3.2"
