@@ -189,7 +189,7 @@ export class EmailLinkStrategy<User> extends Strategy<
         if (!options.failureRedirect) {
           throw new Error(message)
         }
-        session.flash(this.sessionErrorKey, message)
+        session.flash(this.sessionErrorKey, { message })
         const cookie = await sessionStorage.commitSession(session)
         throw redirect(options.failureRedirect, {
           headers: { 'Set-Cookie': cookie },
@@ -220,7 +220,7 @@ export class EmailLinkStrategy<User> extends Strategy<
           throw error
         }
         const { message } = error as Error
-        session.flash(this.sessionErrorKey, message)
+        session.flash(this.sessionErrorKey, { message })
         const cookie = await sessionStorage.commitSession(session)
         throw redirect(options.failureRedirect, {
           headers: { 'Set-Cookie': cookie },
@@ -247,7 +247,7 @@ export class EmailLinkStrategy<User> extends Strategy<
         throw error
       }
       const { message } = error as Error
-      session.flash(this.sessionErrorKey, message)
+      session.flash(this.sessionErrorKey, { message })
       const cookie = await sessionStorage.commitSession(session)
       throw redirect(options.failureRedirect, {
         headers: { 'Set-Cookie': cookie },
