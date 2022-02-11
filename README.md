@@ -108,7 +108,7 @@ Now you can proceed to create your routes and do the setup.
 
 ```tsx
 // app/routes/login.tsx
-import { Form, LoaderFunction, ActionFunction, json } from 'remix'
+import { Form, LoaderFunction, ActionFunction, json, useLoaderData } from 'remix'
 import { auth } from '~/services/auth.server'
 import { sessionStorage } from '~/services/session.server'
 
