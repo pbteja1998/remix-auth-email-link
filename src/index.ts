@@ -111,6 +111,11 @@ export type EmailLinkStrategyOptions<User> = {
  */
 export type EmailLinkStrategyVerifyParams = {
   email: string
+  form: FormData
+  /**
+   * True, if the verify callback is called after clicking on the magic link
+   */
+  magicLinkVerify: boolean
 }
 
 const verifyEmailAddress: VerifyEmailFunction = async (email) => {
@@ -171,6 +176,8 @@ export class EmailLinkStrategy<User> extends Strategy<
       request.headers.get('Cookie')
     )
 
+    const form = new URLSearchParams(await request.text())
+
     // This should only be called in an action if it's used to start the login process
     if (request.method === 'POST') {
       if (!options.successRedirect) {
@@ -180,11 +187,10 @@ export class EmailLinkStrategy<User> extends Strategy<
       }
 
       // get the email address from the request body
-      const body = new URLSearchParams(await request.text())
-      const emailAddress = body.get(this.emailField)
+      const emailAddress = form.get(this.emailField)
 
       // if it doesn't have an email address,
-      if (!emailAddress) {
+      if (!emailAddress || typeof emailAddress !== 'string') {
         const message = 'Missing email address.'
         if (!options.failureRedirect) {
           throw new Error(message)
@@ -202,7 +208,7 @@ export class EmailLinkStrategy<User> extends Strategy<
 
         const domainUrl = this.getDomainURL(request)
 
-        const magicLink = await this.sendToken(emailAddress, domainUrl)
+        const magicLink = await this.sendToken(emailAddress, domainUrl, form)
 
         session.set(this.sessionMagicLinkKey, await this.encrypt(magicLink))
         throw redirect(options.successRedirect, {
@@ -238,7 +244,7 @@ export class EmailLinkStrategy<User> extends Strategy<
         await this.decrypt(magicLink)
       )
       // now that we have the user email we can call verify to get the user
-      user = await this.verify({ email })
+      user = await this.verify({ email, form, magicLinkVerify: true })
     } catch (error) {
       // if something happens, we should redirect to the failureRedirect
       // and flash the error message, or just throw the error if failureRedirect
@@ -282,10 +288,14 @@ export class EmailLinkStrategy<User> extends Strategy<
     return `${protocol}://${host}`
   }
 
-  private async sendToken(email: string, domainUrl: string) {
+  private async sendToken(email: string, domainUrl: string, form: FormData) {
     const magicLink = await this.getMagicLink(email, domainUrl)
 
-    const user = await this.verify({ email }).catch(() => null)
+    const user = await this.verify({
+      email,
+      form,
+      magicLinkVerify: false,
+    }).catch(() => null)
 
     await this.sendEmail({
       emailAddress: email,
