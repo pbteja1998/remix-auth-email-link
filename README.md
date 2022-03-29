@@ -92,9 +92,18 @@ export let auth = new Authenticator<User>(sessionStorage)
 auth.use(
   new EmailLinkStrategy(
     { sendEmail, secret, callbackURL: '/magic' },
-    // In the verify callback you will only receive the email address and you
-    // should return the user instance
-    async ({ email }: { email: string }) => {
+    // In the verify callback,
+    // you will receive the email address, form data and whether or not this is being called after clicking on magic link
+    // and you should return the user instance
+    async ({
+      email,
+      form,
+      magicLinkVerify,
+    }: {
+      email: string
+      form: FormData
+      magicLinkVerify: boolean
+    }) => {
       let user = await getUserByEmail(email)
       return user
     }
