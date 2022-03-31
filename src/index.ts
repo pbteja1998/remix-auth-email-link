@@ -9,6 +9,7 @@ export type SendEmailOptions<User> = {
   magicLink: string
   user?: User | null
   domainUrl: string
+  form: FormData
 }
 
 export type SendEmailFunction<User> = {
@@ -302,6 +303,7 @@ export class EmailLinkStrategy<User> extends Strategy<
       magicLink,
       user,
       domainUrl,
+      form,
     })
 
     return magicLink
