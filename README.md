@@ -35,6 +35,7 @@ type SendEmailOptions<User> = {
   magicLink: string
   user?: User | null
   domainUrl: string
+  form: FormData
 }
 
 type SendEmailFunction<User> = {
