@@ -33,7 +33,7 @@ export type MagicLinkPayload = {
    * The email address used to authenticate
    */
   emailAddress: string
-  form: FormData
+  form: Record<string, unknown>
   /**
    * When the magic link was created, as an ISO string. This is used to check
    * the email link is still valid.
@@ -330,7 +330,12 @@ export class EmailLinkStrategy<User> extends Strategy<
   ): MagicLinkPayload {
     return {
       emailAddress,
-      form,
+      form: Object.fromEntries(
+        [...form.keys()].map((key) => [
+          key,
+          form.getAll(key).length > 1 ? form.getAll(key) : form.get(key),
+        ])
+      ),
       creationDate: new Date().toISOString(),
       validateSessionMagicLink: this.validateSessionMagicLink,
     }
@@ -366,7 +371,7 @@ export class EmailLinkStrategy<User> extends Strategy<
     let emailAddress
     let linkCreationDateString
     let validateSessionMagicLink
-    let form: FormData
+    let form: Record<string, unknown>
     try {
       const decryptedString = await this.decrypt(linkCode)
       const payload = JSON.parse(decryptedString) as MagicLinkPayload
@@ -403,6 +408,16 @@ export class EmailLinkStrategy<User> extends Strategy<
     if (Date.now() > expirationTime) {
       throw new Error('Magic link expired. Please request a new one.')
     }
-    return { emailAddress, form }
+    const formData = new FormData()
+    Object.keys(form).forEach((key) => {
+      if (Array.isArray(form[key])) {
+        ;(form[key] as unknown[]).forEach((value) => {
+          formData.append(key, value as string | Blob)
+        })
+      } else {
+        formData.append(key, form[key] as string | Blob)
+      }
+    })
+    return { emailAddress, form: formData }
   }
 }
