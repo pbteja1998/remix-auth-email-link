@@ -33,6 +33,7 @@ export type MagicLinkPayload = {
    * The email address used to authenticate
    */
   emailAddress: string
+  form: FormData
   /**
    * When the magic link was created, as an ISO string. This is used to check
    * the email link is still valid.
@@ -240,7 +241,7 @@ export class EmailLinkStrategy<User> extends Strategy<
     try {
       // If we get here, the user clicked on the magic link inside email
       const magicLink = session.get(this.sessionMagicLinkKey) ?? ''
-      const email = await this.validateMagicLink(
+      const { emailAddress: email, form } = await this.validateMagicLink(
         request.url,
         await this.decrypt(magicLink)
       )
@@ -290,7 +291,7 @@ export class EmailLinkStrategy<User> extends Strategy<
   }
 
   private async sendToken(email: string, domainUrl: string, form: FormData) {
-    const magicLink = await this.getMagicLink(email, domainUrl)
+    const magicLink = await this.getMagicLink(email, domainUrl, form)
 
     const user = await this.verify({
       email,
@@ -309,8 +310,12 @@ export class EmailLinkStrategy<User> extends Strategy<
     return magicLink
   }
 
-  private async getMagicLink(emailAddress: string, domainUrl: string) {
-    const payload = this.createMagicLinkPayload(emailAddress)
+  private async getMagicLink(
+    emailAddress: string,
+    domainUrl: string,
+    form: FormData
+  ) {
+    const payload = this.createMagicLinkPayload(emailAddress, form)
     const stringToEncrypt = JSON.stringify(payload)
     const encryptedString = await this.encrypt(stringToEncrypt)
     const url = new URL(domainUrl)
@@ -319,9 +324,13 @@ export class EmailLinkStrategy<User> extends Strategy<
     return url.toString()
   }
 
-  private createMagicLinkPayload(emailAddress: string): MagicLinkPayload {
+  private createMagicLinkPayload(
+    emailAddress: string,
+    form: FormData
+  ): MagicLinkPayload {
     return {
       emailAddress,
+      form,
       creationDate: new Date().toISOString(),
       validateSessionMagicLink: this.validateSessionMagicLink,
     }
@@ -357,10 +366,12 @@ export class EmailLinkStrategy<User> extends Strategy<
     let emailAddress
     let linkCreationDateString
     let validateSessionMagicLink
+    let form: FormData
     try {
       const decryptedString = await this.decrypt(linkCode)
       const payload = JSON.parse(decryptedString) as MagicLinkPayload
       emailAddress = payload.emailAddress
+      form = payload.form
       linkCreationDateString = payload.creationDate
       validateSessionMagicLink = payload.validateSessionMagicLink
     } catch (error: unknown) {
@@ -392,6 +403,6 @@ export class EmailLinkStrategy<User> extends Strategy<
     if (Date.now() > expirationTime) {
       throw new Error('Magic link expired. Please request a new one.')
     }
-    return emailAddress
+    return { emailAddress, form }
   }
 }
