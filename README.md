@@ -1,6 +1,6 @@
 # Email Link Strategy - Remix Auth
 
-> This strategy is heavily based on **kcd** strategy present in the v2 of [Remix Auth](https://github.com/sergiodxa/remix-auth/blob/main/docs/strategies/kcd.md). The major difference being we are using `crypto-js` instead of `crypto` so that it can be deployed on CF.
+> This strategy is heavily based on **kcd** strategy present in the v2 of [Remix Auth](https://github.com/sergiodxa/remix-auth/blob/v2.6.0/docs/strategies/kcd.md). The major difference being we are using `crypto-js` instead of `crypto` so that it can be deployed on CF.
 
 The Email Link Strategy implements the authentication strategy used on [kentcdodds.com](https://kentcdodds.com).
 
