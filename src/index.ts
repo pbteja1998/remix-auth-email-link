@@ -275,6 +275,20 @@ export class EmailLinkStrategy<User> extends Strategy<
     })
   }
 
+  public async getMagicLink(
+    emailAddress: string,
+    domainUrl: string,
+    form: FormData
+  ): Promise<string> {
+    const payload = this.createMagicLinkPayload(emailAddress, form)
+    const stringToEncrypt = JSON.stringify(payload)
+    const encryptedString = await this.encrypt(stringToEncrypt)
+    const url = new URL(domainUrl)
+    url.pathname = this.callbackURL
+    url.searchParams.set(this.magicLinkSearchParam, encryptedString)
+    return url.toString()
+  }
+
   private getDomainURL(request: Request): string {
     const host =
       request.headers.get('X-Forwarded-Host') ?? request.headers.get('host')
@@ -308,20 +322,6 @@ export class EmailLinkStrategy<User> extends Strategy<
     })
 
     return magicLink
-  }
-
-  private async getMagicLink(
-    emailAddress: string,
-    domainUrl: string,
-    form: FormData
-  ) {
-    const payload = this.createMagicLinkPayload(emailAddress, form)
-    const stringToEncrypt = JSON.stringify(payload)
-    const encryptedString = await this.encrypt(stringToEncrypt)
-    const url = new URL(domainUrl)
-    url.pathname = this.callbackURL
-    url.searchParams.set(this.magicLinkSearchParam, encryptedString)
-    return url.toString()
   }
 
   private createMagicLinkPayload(
