@@ -276,6 +276,22 @@ As documented in the [advanced usage section of the remix auth docs](https://git
 
 Alternatively, **if you don't use cookie session storage** you can use the `commitOnReturn` option to have the changes to the session (setting the user and unsetting the magic link and email keys) be committed before returning the user data. In this case as the cookie only contains an id if you don't need any other changes to the session you don't need to manually get the session, commit, create headers, or provide them to the redirect.
 
+## Magic Link Error Messages
+
+The following magic link error types exist:
+
+- expired
+  - Thrown when the magic link has expired.
+  - Default - "Magic link expired. Please request a new one."
+- invalid
+  - Thrown when there is an error decrypting the the magic link code, the email address in the payload is not a string, or the link creation date cannot be determined.
+  - Default - "Sign in link invalid. Please request a new one."
+- mismatch
+  - Only relevant if you provide true for `validateSessionMagicLink`. This error is thrown if the magic link is valid but it does not match with the existing link in the session (or the existing session has no magic link).
+  - Default - "You must open the magic link on the same device it was created from for security reasons. Please request a new link."
+
+You can override any of these messages by setting the relevant key in the `errorMessages` option.
+
 ## Options
 
 The EmailLinkStrategy supports a few more optional configuration options you can set. Here's the whole type with each option commented.
@@ -350,5 +366,9 @@ type EmailLinkStrategyOptions<User> = {
    * @default false
    */
   validateSessionMagicLink?: boolean
+  /**
+   * Customize the magic link error messages
+   */
+  errorMessages?: Partial<Record<MagicLinkErrorType, string>>
 }
 ```

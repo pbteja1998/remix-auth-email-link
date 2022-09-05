@@ -49,6 +49,8 @@ export type MagicLinkPayload = {
   validateSessionMagicLink: boolean
 }
 
+type MagicLinkErrorType = 'expired' | 'invalid' | 'mismatch'
+
 /**
  * This interface declares what configuration the strategy needs from the
  * developer to correctly work.
@@ -122,6 +124,10 @@ export type EmailLinkStrategyOptions<User> = {
    * @default false
    */
   validateSessionMagicLink?: boolean
+  /**
+   * Customize the magic link error messages
+   */
+  errorMessages?: Partial<Record<MagicLinkErrorType, string>>
 }
 
 /**
@@ -141,6 +147,12 @@ const verifyEmailAddress: VerifyEmailFunction = async (email) => {
   if (!/.+@.+/u.test(email)) {
     throw new Error('A valid email is required.')
   }
+}
+
+const defaultErrorMessages: Record<MagicLinkErrorType, string> = {
+  expired: 'Magic link expired. Please request a new one.',
+  invalid: 'Sign in link invalid. Please request a new one.',
+  mismatch: `You must open the magic link on the same device it was created from for security reasons. Please request a new link.`,
 }
 
 export class EmailLinkStrategy<User> extends Strategy<
@@ -173,6 +185,8 @@ export class EmailLinkStrategy<User> extends Strategy<
 
   private readonly validateSessionMagicLink: boolean
 
+  private readonly errorMessages: Record<MagicLinkErrorType, string>
+
   constructor(
     options: EmailLinkStrategyOptions<User>,
     verify: StrategyVerifyCallback<User, EmailLinkStrategyVerifyParams>
@@ -190,6 +204,12 @@ export class EmailLinkStrategy<User> extends Strategy<
     this.magicLinkSearchParam = options.magicLinkSearchParam ?? 'token'
     this.linkExpirationTime = options.linkExpirationTime ?? 1000 * 60 * 30 // 30 minutes
     this.validateSessionMagicLink = options.validateSessionMagicLink ?? false
+    this.errorMessages = {
+      expired: options.errorMessages?.expired ?? defaultErrorMessages.expired,
+      invalid: options.errorMessages?.invalid ?? defaultErrorMessages.invalid,
+      mismatch:
+        options.errorMessages?.mismatch ?? defaultErrorMessages.mismatch,
+    }
   }
 
   public async authenticate(
@@ -245,8 +265,7 @@ export class EmailLinkStrategy<User> extends Strategy<
           },
         })
       } catch (error) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if ((error as any).status === 302) {
+        if (error instanceof Response && error.status === 302) {
           // If it's a redirect, then just throw the redirect as it is
           throw error
         }
@@ -412,27 +431,25 @@ export class EmailLinkStrategy<User> extends Strategy<
       validateSessionMagicLink = payload.validateSessionMagicLink
     } catch (error: unknown) {
       console.error(error)
-      throw new Error('Sign in link invalid. Please request a new one.')
+      throw new Error(this.errorMessages.invalid)
     }
 
     if (typeof emailAddress !== 'string') {
-      throw new TypeError('Sign in link invalid. Please request a new one.')
+      throw new TypeError(this.errorMessages.invalid)
     }
 
     if (validateSessionMagicLink && linkCode !== sessionLinkCode) {
-      throw new Error(
-        `You must open the magic link on the same device it was created from for security reasons. Please request a new link.`
-      )
+      throw new Error(this.errorMessages.mismatch)
     }
 
     if (typeof linkCreationDateString !== 'string') {
-      throw new TypeError('Sign in link invalid. Please request a new one.')
+      throw new TypeError(this.errorMessages.invalid)
     }
 
     const linkCreationDate = new Date(linkCreationDateString)
     const expirationTime = linkCreationDate.getTime() + this.linkExpirationTime
     if (Date.now() > expirationTime) {
-      throw new Error('Magic link expired. Please request a new one.')
+      throw new Error(this.errorMessages.expired)
     }
     const formData = new FormData()
     Object.keys(form).forEach((key) => {
