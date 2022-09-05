@@ -270,7 +270,13 @@ auth.use(
 )
 ```
 
-## Options options
+## A note on `authenticate` without a `successRedirect`
+
+As documented in the [advanced usage section of the remix auth docs](https://github.com/sergiodxa/remix-auth#advanced-usage) if you do not pass the `successRedirect` option to the `authenticator.authenticate` method it will return the user data and you are responsible for setting the user data in the session, committing the session, and (likely) including the headers in the redirect. With this strategy if you do not provide the `successRedirect` the `sessionMagicLinkKey` and `sessionEmailKey` will not be unset and you likely want to unset them.
+
+Alternatively, **if you don't use cookie session storage** you can use the `commitOnReturn` option to have the changes to the session (setting the user and unsetting the magic link and email keys) be committed before returning the user data. In this case as the cookie only contains an id if you don't need any other changes to the session you don't need to manually get the session, commit, create headers, or provide them to the redirect.
+
+## Options
 
 The EmailLinkStrategy supports a few more optional configuration options you can set. Here's the whole type with each option commented.
 
@@ -326,6 +332,18 @@ type EmailLinkStrategyOptions<User> = {
    * @default "auth:magicLink"
    */
   sessionMagicLinkKey?: string
+  /**
+   * The key on the session to store the email.
+   * It's unset the same time the sessionMagicLinkKey is.
+   * @default "auth:email"
+   */
+  sessionEmailKey?: string
+  /**
+   * Should the session be commited before returning
+   * the user data  if the `successRedirect` is omitted.
+   * @default false
+   */
+  commitOnReturn?: boolean
   /**
    * Add an extra layer of protection and validate the magic link is valid.
    * @default false

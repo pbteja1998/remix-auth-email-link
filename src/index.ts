@@ -101,6 +101,18 @@ export type EmailLinkStrategyOptions<User> = {
    */
   sessionMagicLinkKey?: string
   /**
+   * The key on the session to store the email.
+   * It's unset the same time the sessionMagicLinkKey is.
+   * @default "auth:email"
+   */
+  sessionEmailKey?: string
+  /**
+   * Should the session be commited before returning
+   * the user data if the `successRedirect` is omitted.
+   * @default false
+   */
+  commitOnReturn?: boolean
+  /**
    * Add an extra layer of protection and validate the magic link is valid.
    * @default false
    */
@@ -150,6 +162,10 @@ export class EmailLinkStrategy<User> extends Strategy<
 
   private readonly sessionMagicLinkKey: string
 
+  private readonly sessionEmailKey: string
+
+  private readonly commitOnReturn: boolean
+
   private readonly validateSessionMagicLink: boolean
 
   constructor(
@@ -162,6 +178,8 @@ export class EmailLinkStrategy<User> extends Strategy<
     this.secret = options.secret
     this.sessionErrorKey = options.sessionErrorKey ?? 'auth:error'
     this.sessionMagicLinkKey = options.sessionMagicLinkKey ?? 'auth:magiclink'
+    this.sessionEmailKey = options.sessionEmailKey ?? 'auth:email'
+    this.commitOnReturn = options.commitOnReturn ?? false
     this.validateEmail = options.verifyEmailAddress ?? verifyEmailAddress
     this.emailField = options.emailField ?? this.emailField
     this.magicLinkSearchParam = options.magicLinkSearchParam ?? 'token'
@@ -211,7 +229,7 @@ export class EmailLinkStrategy<User> extends Strategy<
         const domainUrl = this.getDomainURL(request)
 
         const magicLink = await this.sendToken(emailAddress, domainUrl, form)
-
+        session.set(this.sessionEmailKey, emailAddress)
         session.set(this.sessionMagicLinkKey, await this.encrypt(magicLink))
         throw redirect(options.successRedirect, {
           headers: {
@@ -262,13 +280,18 @@ export class EmailLinkStrategy<User> extends Strategy<
       })
     }
 
+    // remove the magic link and email from the session
+    session.unset(this.sessionMagicLinkKey)
+    session.unset(this.sessionEmailKey)
+    session.set(options.sessionKey, user)
+
     if (!options.successRedirect) {
+      if (this.commitOnReturn) {
+        await sessionStorage.commitSession(session)
+      }
       return user
     }
 
-    // remove the magic link from the session
-    session.unset(this.sessionMagicLinkKey)
-    session.set(options.sessionKey, user)
     const cookie = await sessionStorage.commitSession(session)
     throw redirect(options.successRedirect, {
       headers: { 'Set-Cookie': cookie },
