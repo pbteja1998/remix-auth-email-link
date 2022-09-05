@@ -324,7 +324,8 @@ type EmailLinkStrategyOptions<User> = {
   linkExpirationTime?: number
   /**
    * The key on the session to store any error message.
-   * @default "auth:error"
+   * @default "auth:error" or what was provided to the Authenticator constructor
+   * @see https://github.com/sergiodxa/remix-auth#reading-authentication-errors
    */
   sessionErrorKey?: string
   /**

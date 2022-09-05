@@ -1,7 +1,11 @@
 import type { SessionStorage } from '@remix-run/server-runtime'
 import { redirect } from '@remix-run/server-runtime'
 import crypto from 'crypto-js'
-import type { AuthenticateOptions, StrategyVerifyCallback } from 'remix-auth'
+import type {
+  AuthenticateOptions,
+  Authenticator,
+  StrategyVerifyCallback,
+} from 'remix-auth'
 import { Strategy } from 'remix-auth'
 
 export type SendEmailOptions<User> = {
@@ -159,7 +163,7 @@ export class EmailLinkStrategy<User> extends Strategy<
 
   private readonly linkExpirationTime: number
 
-  private readonly sessionErrorKey: string
+  private readonly sessionErrorKey?: string
 
   private readonly sessionMagicLinkKey: string
 
@@ -177,7 +181,7 @@ export class EmailLinkStrategy<User> extends Strategy<
     this.sendEmail = options.sendEmail
     this.callbackURL = options.callbackURL ?? '/magic'
     this.secret = options.secret
-    this.sessionErrorKey = options.sessionErrorKey ?? 'auth:error'
+    this.sessionErrorKey = options.sessionErrorKey
     this.sessionMagicLinkKey = options.sessionMagicLinkKey ?? 'auth:magiclink'
     this.sessionEmailKey = options.sessionEmailKey ?? 'auth:email'
     this.commitOnReturn = options.commitOnReturn ?? false
@@ -191,8 +195,11 @@ export class EmailLinkStrategy<User> extends Strategy<
   public async authenticate(
     request: Request,
     sessionStorage: SessionStorage,
-    options: AuthenticateOptions
+    options: AuthenticateOptions & {
+      sessionErrorKey: Authenticator['sessionErrorKey']
+    }
   ): Promise<User> {
+    const sessionErrorKey = this.sessionErrorKey ?? options.sessionErrorKey
     const session = await sessionStorage.getSession(
       request.headers.get('Cookie')
     )
@@ -216,7 +223,7 @@ export class EmailLinkStrategy<User> extends Strategy<
         if (!options.failureRedirect) {
           throw new Error(message)
         }
-        session.flash(this.sessionErrorKey, { message })
+        session.flash(sessionErrorKey, { message })
         const cookie = await sessionStorage.commitSession(session)
         throw redirect(options.failureRedirect, {
           headers: { 'Set-Cookie': cookie },
@@ -247,7 +254,7 @@ export class EmailLinkStrategy<User> extends Strategy<
           throw error
         }
         const { message } = error as Error
-        session.flash(this.sessionErrorKey, { message })
+        session.flash(sessionErrorKey, { message })
         const cookie = await sessionStorage.commitSession(session)
         throw redirect(options.failureRedirect, {
           headers: { 'Set-Cookie': cookie },
@@ -274,7 +281,7 @@ export class EmailLinkStrategy<User> extends Strategy<
         throw error
       }
       const { message } = error as Error
-      session.flash(this.sessionErrorKey, { message })
+      session.flash(sessionErrorKey, { message })
       const cookie = await sessionStorage.commitSession(session)
       throw redirect(options.failureRedirect, {
         headers: { 'Set-Cookie': cookie },
