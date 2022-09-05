@@ -113,7 +113,8 @@ export type EmailLinkStrategyOptions<User> = {
    */
   commitOnReturn?: boolean
   /**
-   * Add an extra layer of protection and validate the magic link is valid.
+   * Add an extra layer of protection and validate the magic link is
+   * the same magic link in the existing session.
    * @default false
    */
   validateSessionMagicLink?: boolean
@@ -411,15 +412,10 @@ export class EmailLinkStrategy<User> extends Strategy<
       throw new TypeError('Sign in link invalid. Please request a new one.')
     }
 
-    if (validateSessionMagicLink) {
-      if (!sessionLinkCode) {
-        throw new Error('Sign in link invalid. Please request a new one.')
-      }
-      if (linkCode !== sessionLinkCode) {
-        throw new Error(
-          `You must open the magic link on the same device it was created from for security reasons. Please request a new link.`
-        )
-      }
+    if (validateSessionMagicLink && linkCode !== sessionLinkCode) {
+      throw new Error(
+        `You must open the magic link on the same device it was created from for security reasons. Please request a new link.`
+      )
     }
 
     if (typeof linkCreationDateString !== 'string') {

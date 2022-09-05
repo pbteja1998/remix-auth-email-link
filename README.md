@@ -345,7 +345,7 @@ type EmailLinkStrategyOptions<User> = {
    */
   commitOnReturn?: boolean
   /**
-   * Add an extra layer of protection and validate the magic link is valid.
+   * Add an extra layer of protection and validate the magic link is the same magic link in the existing session.
    * @default false
    */
   validateSessionMagicLink?: boolean
