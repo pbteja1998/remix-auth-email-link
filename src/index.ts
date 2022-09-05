@@ -300,6 +300,8 @@ export class EmailLinkStrategy<User> extends Strategy<
         throw error
       }
       const { message } = error as Error
+      session.unset(this.sessionMagicLinkKey)
+      session.unset(this.sessionEmailKey)
       session.flash(sessionErrorKey, { message })
       const cookie = await sessionStorage.commitSession(session)
       throw redirect(options.failureRedirect, {
