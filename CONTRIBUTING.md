@@ -2,10 +2,16 @@
 
 ## Setup
 
-Run `npm install` to install the dependencies.
+First make sure you have yarn 1.x (classic) installed. If you are on yarn 2 or 3, you can use yarn 1.x by issueing the following command:
 
-Run the tests with `npm run test`.
+```bash
+yarn set version classic
+```
 
-Run the linter with `npm run lint`.
+Run `yarn install` to install the dependencies.
 
-Run the typechecker with `npm run typecheck`.
+Run the tests with `yarn run test`.
+
+Run the linter with `yarn run lint`.
+
+Run the typechecker with `yarn run typecheck`.
