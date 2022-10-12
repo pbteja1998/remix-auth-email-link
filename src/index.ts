@@ -105,6 +105,13 @@ export type EmailLinkStrategyOptions<User> = {
    * @default false
    */
   validateSessionMagicLink?: boolean
+
+  /**
+   * The key on the session to store the email.
+   * It's unset the same time the sessionMagicLinkKey is.
+   * @default "auth:email"
+   */
+  sessionEmailKey?: string
 }
 
 /**
@@ -152,6 +159,8 @@ export class EmailLinkStrategy<User> extends Strategy<
 
   private readonly validateSessionMagicLink: boolean
 
+  private readonly sessionEmailKey: string
+
   constructor(
     options: EmailLinkStrategyOptions<User>,
     verify: StrategyVerifyCallback<User, EmailLinkStrategyVerifyParams>
@@ -167,6 +176,7 @@ export class EmailLinkStrategy<User> extends Strategy<
     this.magicLinkSearchParam = options.magicLinkSearchParam ?? 'token'
     this.linkExpirationTime = options.linkExpirationTime ?? 1000 * 60 * 30 // 30 minutes
     this.validateSessionMagicLink = options.validateSessionMagicLink ?? false
+    this.sessionEmailKey = options.sessionEmailKey ?? 'auth:email'
   }
 
   public async authenticate(
@@ -213,6 +223,8 @@ export class EmailLinkStrategy<User> extends Strategy<
         const magicLink = await this.sendToken(emailAddress, domainUrl, form)
 
         session.set(this.sessionMagicLinkKey, await this.encrypt(magicLink))
+        session.set(this.sessionEmailKey, emailAddress)
+
         throw redirect(options.successRedirect, {
           headers: {
             'Set-Cookie': await sessionStorage.commitSession(session),
@@ -266,8 +278,10 @@ export class EmailLinkStrategy<User> extends Strategy<
       return user
     }
 
-    // remove the magic link from the session
+    // remove the magic link and email from the session
     session.unset(this.sessionMagicLinkKey)
+    session.unset(this.sessionEmailKey)
+
     session.set(options.sessionKey, user)
     const cookie = await sessionStorage.commitSession(session)
     throw redirect(options.successRedirect, {

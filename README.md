@@ -134,8 +134,10 @@ export let loader: LoaderFunction = async ({ request }) => {
   // This session key `auth:magiclink` is the default one used by the EmailLinkStrategy
   // you can customize it passing a `sessionMagicLinkKey` when creating an
   // instance.
-  if (session.has('auth:magiclink')) return json({ magicLinkSent: true })
-  return json({ magicLinkSent: false })
+  return json({
+    magicLinkSent: session.has('auth:magiclink'),
+    magicLinkEmail: session.get('auth:email'),
+  })
 }
 
 export let action: ActionFunction = async ({ request }) => {
@@ -152,15 +154,26 @@ export let action: ActionFunction = async ({ request }) => {
 
 // app/routes/login.tsx
 export default function Login() {
-  let { magicLinkSent } = useLoaderData<{ magicLinkSent: boolean }>()
+  let { magicLinkSent, magicLinkEmail } =
+    useLoaderData<{ magicLinkSent: boolean; magicLinkEmail?: string }>()
+
   return (
     <Form action="/login" method="post">
-      <h1>Log in to your account.</h1>
-      <div>
-        <label htmlFor="email">Email address</label>
-        <input id="email" type="email" name="email" required />
-      </div>
-      <button>Email a login link</button>
+      {magicLinkSent ? (
+        <p>
+          Successfully sent magic link{' '}
+          {magicLinkEmail ? `to ${magicLinkEmail}` : ''}
+        </p>
+      ) : (
+        <>
+          <h1>Log in to your account.</h1>
+          <div>
+            <label htmlFor="email">Email address</label>
+            <input id="email" type="email" name="email" required />
+          </div>
+          <button>Email a login link</button>
+        </>
+      )}
     </Form>
   )
 }
@@ -331,5 +344,12 @@ type EmailLinkStrategyOptions<User> = {
    * @default false
    */
   validateSessionMagicLink?: boolean
+
+  /**
+   * The key on the session to store the email.
+   * It's unset the same time the sessionMagicLinkKey is.
+   * @default "auth:email"
+   */
+  sessionEmailKey?: string
 }
 ```
