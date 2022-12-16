@@ -118,17 +118,13 @@ Now you can proceed to create your routes and do the setup.
 
 ```tsx
 // app/routes/login.tsx
-import {
-  Form,
-  LoaderFunction,
-  ActionFunction,
-  json,
-  useLoaderData,
-} from 'remix'
+import { ActionArgs, LoaderArgs } from '@remix-run/node'
+import { json } from '@remix-run/node'
+import { Form, useLoaderData } from '@remix-run/react'
 import { auth } from '~/services/auth.server'
 import { sessionStorage } from '~/services/session.server'
 
-export let loader: LoaderFunction = async ({ request }) => {
+export let loader = async ({ request }: LoaderArgs) => {
   await auth.isAuthenticated(request, { successRedirect: '/me' })
   let session = await sessionStorage.getSession(request.headers.get('Cookie'))
   // This session key `auth:magiclink` is the default one used by the EmailLinkStrategy
@@ -140,7 +136,7 @@ export let loader: LoaderFunction = async ({ request }) => {
   })
 }
 
-export let action: ActionFunction = async ({ request }) => {
+export let action = async ({ request }: ActionArgs) => {
   // The success redirect is required in this action, this is where the user is
   // going to be redirected after the magic link is sent, note that here the
   // user is not yet authenticated, so you can't send it to a private page.
@@ -154,8 +150,7 @@ export let action: ActionFunction = async ({ request }) => {
 
 // app/routes/login.tsx
 export default function Login() {
-  let { magicLinkSent, magicLinkEmail } =
-    useLoaderData<{ magicLinkSent: boolean; magicLinkEmail?: string }>()
+  let { magicLinkSent, magicLinkEmail } = useLoaderData<typeof loader>()
 
   return (
     <Form action="/login" method="post">
@@ -181,11 +176,12 @@ export default function Login() {
 
 ```tsx
 // app/routes/magic.tsx
-import { LoaderFunction, ActionFunction, json } from 'remix'
+import { LoaderArgs } from '@remix-run/node'
+import { json } from '@remix-run/node'
 import { auth } from '~/services/auth.server'
 import { sessionStorage } from '~/services/session.server'
 
-export let loader: LoaderFunction = async ({ request }) => {
+export let loader = async ({ request }: LoaderArgs) => {
   await auth.authenticate('email-link', request, {
     // If the user was authenticated, we redirect them to their profile page
     // This redirect is optional, if not defined the user will be returned by
@@ -202,10 +198,11 @@ export let loader: LoaderFunction = async ({ request }) => {
 
 ```tsx
 // app/routes/me.tsx
-import { LoaderFunction, json } from 'remix'
+import { LoaderArgs } from '@remix-run/node'
+import { json } from '@remix-run/node'
 import { auth } from '~/services/auth.server'
 
-export let loader: LoaderFunction = async ({ request }) => {
+export let loader = async ({ request }: LoaderArgs) => {
   // If the user is here, it's already authenticated, if not redirect them to
   // the login page.
   let user = await auth.isAuthenticated(request, { failureRedirect: '/login' })
@@ -213,7 +210,7 @@ export let loader: LoaderFunction = async ({ request }) => {
 }
 
 export default function Me() {
-  let { user } = useLoaderData<{ user: User }>()
+  let { user } = useLoaderData<typeof loader>()
   return (
     <div>
       <h1>Welcome {user.name}</h1>
