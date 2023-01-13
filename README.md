@@ -78,7 +78,7 @@ import { Authenticator } from 'remix-auth'
 import { EmailLinkStrategy } from 'remix-auth-email-link'
 import { sessionStorage } from '~/services/session.server'
 import { sendEmail } from '~/services/email.server'
-import { User, getUserByEmail } from '~/models/user.model'
+import { User, getUserByEmail } from '~/models/user.server'
 
 // This secret is used to encrypt the token sent in the magic link and the
 // session used to validate someone else is not trying to sign-in as another
@@ -177,9 +177,7 @@ export default function Login() {
 ```tsx
 // app/routes/magic.tsx
 import { LoaderArgs } from '@remix-run/node'
-import { json } from '@remix-run/node'
 import { auth } from '~/services/auth.server'
-import { sessionStorage } from '~/services/session.server'
 
 export let loader = async ({ request }: LoaderArgs) => {
   await auth.authenticate('email-link', request, {
@@ -200,6 +198,7 @@ export let loader = async ({ request }: LoaderArgs) => {
 // app/routes/me.tsx
 import { LoaderArgs } from '@remix-run/node'
 import { json } from '@remix-run/node'
+import { useLoaderData } from '@remix-run/react'
 import { auth } from '~/services/auth.server'
 
 export let loader = async ({ request }: LoaderArgs) => {
