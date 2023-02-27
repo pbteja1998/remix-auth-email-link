@@ -26,23 +26,22 @@ export type VerifyEmailFunction = {
 }
 
 /**
- * The content of the magic link payload
+ * The content of the magic link payload. Keys are minified so that the resulting link is as short as possible.
  */
 export type MagicLinkPayload = {
   /**
-   * The email address used to authenticate
+   * Email address used to authenticate.
    */
-  emailAddress: string
-  form: Record<string, unknown>
+  e: string
   /**
-   * When the magic link was created, as an ISO string. This is used to check
+   * Form data received in the request.
+   */
+  f: Record<string, unknown>
+  /**
+   * Creation date of the magic link, as an ISO string. This is used to check
    * the email link is still valid.
    */
-  creationDate: string
-  /**
-   * If it should be validated or not.
-   */
-  validateSessionMagicLink: boolean
+  c: string
 }
 
 /**
@@ -345,15 +344,16 @@ export class EmailLinkStrategy<User> extends Strategy<
     form: FormData
   ): MagicLinkPayload {
     return {
-      emailAddress,
-      form: Object.fromEntries(
-        [...form.keys()].map((key) => [
-          key,
-          form.getAll(key).length > 1 ? form.getAll(key) : form.get(key),
-        ])
+      e: emailAddress,
+      f: Object.fromEntries(
+        [...form.keys()]
+          .filter((key) => key !== this.emailField)
+          .map((key) => [
+            key,
+            form.getAll(key).length > 1 ? form.getAll(key) : form.get(key),
+          ])
       ),
-      creationDate: new Date().toISOString(),
-      validateSessionMagicLink: this.validateSessionMagicLink,
+      c: new Date().toISOString(),
     }
   }
 
@@ -386,15 +386,14 @@ export class EmailLinkStrategy<User> extends Strategy<
 
     let emailAddress
     let linkCreationDateString
-    let validateSessionMagicLink
     let form: Record<string, unknown>
     try {
       const decryptedString = await this.decrypt(linkCode)
       const payload = JSON.parse(decryptedString) as MagicLinkPayload
-      emailAddress = payload.emailAddress
-      form = payload.form
-      linkCreationDateString = payload.creationDate
-      validateSessionMagicLink = payload.validateSessionMagicLink
+      emailAddress = payload.e
+      form = payload.f
+      form[this.emailField] = emailAddress
+      linkCreationDateString = payload.c
     } catch (error: unknown) {
       console.error(error)
       throw new Error('Sign in link invalid. Please request a new one.')
@@ -404,7 +403,7 @@ export class EmailLinkStrategy<User> extends Strategy<
       throw new TypeError('Sign in link invalid. Please request a new one.')
     }
 
-    if (validateSessionMagicLink) {
+    if (this.validateSessionMagicLink) {
       if (!sessionLinkCode) {
         throw new Error('Sign in link invalid. Please request a new one.')
       }
