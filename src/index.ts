@@ -41,7 +41,7 @@ export type MagicLinkPayload = {
    * Creation date of the magic link, as an ISO string. This is used to check
    * the email link is still valid.
    */
-  c: string
+  c: number
 }
 
 /**
@@ -361,7 +361,7 @@ export class EmailLinkStrategy<User> extends Strategy<
     return {
       e: emailAddress,
       ...(formPayload && { f: formPayload }),
-      c: new Date().toISOString(),
+      c: Date.now(),
     }
   }
 
@@ -393,7 +393,7 @@ export class EmailLinkStrategy<User> extends Strategy<
       : null
 
     let emailAddress
-    let linkCreationDateString
+    let linkCreationTime
     let form: Record<string, unknown>
     try {
       const decryptedString = await this.decrypt(linkCode)
@@ -401,7 +401,7 @@ export class EmailLinkStrategy<User> extends Strategy<
       emailAddress = payload.e
       form = payload.f ?? {}
       form[this.emailField] = emailAddress
-      linkCreationDateString = payload.c
+      linkCreationTime = payload.c
     } catch (error: unknown) {
       console.error(error)
       throw new Error('Sign in link invalid. Please request a new one.')
@@ -422,12 +422,11 @@ export class EmailLinkStrategy<User> extends Strategy<
       }
     }
 
-    if (typeof linkCreationDateString !== 'string') {
+    if (typeof linkCreationTime !== 'number') {
       throw new TypeError('Sign in link invalid. Please request a new one.')
     }
 
-    const linkCreationDate = new Date(linkCreationDateString)
-    const expirationTime = linkCreationDate.getTime() + this.linkExpirationTime
+    const expirationTime = linkCreationTime + this.linkExpirationTime
     if (Date.now() > expirationTime) {
       throw new Error('Magic link expired. Please request a new one.')
     }
