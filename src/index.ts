@@ -36,7 +36,7 @@ export type MagicLinkPayload = {
   /**
    * Form data received in the request.
    */
-  f: Record<string, unknown>
+  f?: Record<string, unknown>
   /**
    * Creation date of the magic link, as an ISO string. This is used to check
    * the email link is still valid.
@@ -339,20 +339,28 @@ export class EmailLinkStrategy<User> extends Strategy<
     return magicLink
   }
 
+  private createFormPayload(form: FormData): MagicLinkPayload['f'] {
+    const formKeys = [...form.keys()]
+    return formKeys.length === 1
+      ? undefined
+      : Object.fromEntries(
+          formKeys
+            .filter((key) => key !== this.emailField)
+            .map((key) => [
+              key,
+              form.getAll(key).length > 1 ? form.getAll(key) : form.get(key),
+            ])
+        )
+  }
+
   private createMagicLinkPayload(
     emailAddress: string,
     form: FormData
   ): MagicLinkPayload {
+    const formPayload = this.createFormPayload(form)
     return {
       e: emailAddress,
-      f: Object.fromEntries(
-        [...form.keys()]
-          .filter((key) => key !== this.emailField)
-          .map((key) => [
-            key,
-            form.getAll(key).length > 1 ? form.getAll(key) : form.get(key),
-          ])
-      ),
+      ...(formPayload && { f: formPayload }),
       c: new Date().toISOString(),
     }
   }
@@ -391,7 +399,7 @@ export class EmailLinkStrategy<User> extends Strategy<
       const decryptedString = await this.decrypt(linkCode)
       const payload = JSON.parse(decryptedString) as MagicLinkPayload
       emailAddress = payload.e
-      form = payload.f
+      form = payload.f ?? {}
       form[this.emailField] = emailAddress
       linkCreationDateString = payload.c
     } catch (error: unknown) {
