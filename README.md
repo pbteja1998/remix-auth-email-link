@@ -233,7 +233,7 @@ type VerifyEmailFunction = {
 }
 ```
 
-**Example**
+### Example
 
 ```ts
 // app/services/verifier.server.ts
