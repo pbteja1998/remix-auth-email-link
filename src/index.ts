@@ -311,10 +311,9 @@ export class EmailLinkStrategy<User> extends Strategy<
     }
 
     const protocol =
-      request.headers.get('X-Forwarded-Proto') ??
-      (host.includes('localhost') || host.includes('127.0.0.1')
+      host.includes('localhost') || host.includes('127.0.0.1')
         ? 'http'
-        : 'https')
+        : request.headers.get('X-Forwarded-Proto') ?? 'https'
 
     return `${protocol}://${host}`
   }
