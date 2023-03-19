@@ -333,7 +333,7 @@ type EmailLinkStrategyOptions<User> = {
   sessionErrorKey?: string
   /**
    * The key on the session to store the magic link.
-   * @default "auth:magicLink"
+   * @default "auth:magiclink"
    */
   sessionMagicLinkKey?: string
   /**
