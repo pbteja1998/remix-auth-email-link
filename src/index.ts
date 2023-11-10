@@ -188,13 +188,12 @@ export class EmailLinkStrategy<User> extends Strategy<
     )
 
     const form = new URLSearchParams(await request.text())
-    const formData = new FormData();
+    const formData = new FormData()
 
     // Convert the URLSearchParams to FormData
     for (const [name, value] of form) {
-      formData.append(name, value);
+      formData.append(name, value)
     }
-
 
     // This should only be called in an action if it's used to start the login process
     if (request.method === 'POST') {
@@ -226,7 +225,11 @@ export class EmailLinkStrategy<User> extends Strategy<
 
         const domainUrl = this.getDomainURL(request)
 
-        const magicLink = await this.sendToken(emailAddress, domainUrl, formData)
+        const magicLink = await this.sendToken(
+          emailAddress,
+          domainUrl,
+          formData
+        )
 
         session.set(this.sessionMagicLinkKey, await this.encrypt(magicLink))
         session.set(this.sessionEmailKey, emailAddress)
