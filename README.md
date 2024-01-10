@@ -140,11 +140,12 @@ export let action = async ({ request }: ActionArgs) => {
   // The success redirect is required in this action, this is where the user is
   // going to be redirected after the magic link is sent, note that here the
   // user is not yet authenticated, so you can't send it to a private page.
+  const url = new URL(request.url);
   await auth.authenticate('email-link', request, {
-    successRedirect: '/login',
+    successRedirect: url.pathname,
     // If this is not set, any error will be throw and the ErrorBoundary will be
     // rendered.
-    failureRedirect: '/login',
+    failureRedirect: url.pathname,
   })
 }
 
