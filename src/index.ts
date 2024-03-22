@@ -183,17 +183,11 @@ export class EmailLinkStrategy<User> extends Strategy<
     sessionStorage: SessionStorage,
     options: AuthenticateOptions
   ): Promise<User> {
+    const formData = await this.resolveFormData(options, request)
+
     const session = await sessionStorage.getSession(
       request.headers.get('Cookie')
     )
-
-    const form = new URLSearchParams(await request.text())
-    const formData = new FormData()
-
-    // Convert the URLSearchParams to FormData
-    for (const [name, value] of form) {
-      formData.append(name, value)
-    }
 
     // This should only be called in an action if it's used to start the login process
     if (request.method === 'POST') {
@@ -204,7 +198,7 @@ export class EmailLinkStrategy<User> extends Strategy<
       }
 
       // get the email address from the request body
-      const emailAddress = form.get(this.emailField)
+      const emailAddress = formData.get(this.emailField)
 
       // if it doesn't have an email address,
       if (!emailAddress || typeof emailAddress !== 'string') {
@@ -450,5 +444,26 @@ export class EmailLinkStrategy<User> extends Strategy<
       }
     })
     return { emailAddress, form: formData }
+  }
+
+  private async resolveFormData(
+    options: AuthenticateOptions,
+    request: Request
+  ): Promise<FormData> {
+    const contextFormData = options.context?.formData
+
+    if (contextFormData instanceof FormData) {
+      return contextFormData
+    } 
+      const form = new URLSearchParams(await request.text())
+      const formData = new FormData()
+
+      // Convert the URLSearchParams to FormData
+      for (const [name, value] of form) {
+        formData.append(name, value)
+      }
+
+      return formData
+    
   }
 }
